@@ -1,0 +1,12 @@
+psutil
+os
+progressbar
+colorama
+random
+datetime
+pyaudio
+shutil
+textblob
+traceback
+spacy
+pyttsx3
