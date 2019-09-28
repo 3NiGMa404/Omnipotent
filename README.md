@@ -1,9 +1,9 @@
 # Omnipotent
 *A chatbot in the making*
 ---------------------------
-Omnipotent is a machine learning retrieval-based chatbot made in python 3  
-Omnipotent currently only has support for Windows 10 machines running python 3.7 or later
+Omnipotent is a machine learning retrieval-based chatbot made in python 3, currently supporting windows 10 running python 3.6+
 
+Usage
 -----------------------------
 To run the chatbot, please make sure you install all of the required modules with `pip install -r requirements.txt`, then double click the 'run ai.cmd' command. A command window should pop up with a progress bar. Once all the files have loaded, it will ask you your name. Enter your name then click enter. If a yellow `>: ` comes up, you're good to go! Simply type in what you want to say the the AI, and it should respond!
 
