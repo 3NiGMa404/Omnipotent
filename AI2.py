@@ -7,7 +7,6 @@ Date: 2019-09-26
 print(__doc__)
 import psutil
 import os
-import inputoutput
 path=os.path.realpath(__file__).replace(os.path.basename(__file__),'').replace('\\','/')
 process = psutil.Process(os.getpid())
 import progressbar
@@ -74,6 +73,7 @@ femaleraw=open('female.txt','r').read().split('\n')
 female=[]
 for j in femaleraw:
     female.append(j.lower())
+names=male+female
 print('done')
 bar.update(11)
 os.system('cls')
@@ -119,10 +119,9 @@ def add_noun(name,Class,data=''):
 print('done')
 bar.update(13)
 os.system('cls')
-speak=bool(input('\nspeak (bool): '))
 def getinput():
-    from ginput import it
-    return it
+    from ginput import git
+    return git()
 mynames=['omnipotent']
 talkingto=input('who are you? ')
 add_noun(talkingto,'PERSON')
@@ -172,12 +171,10 @@ def find_response(convo):
             think('Chose "' + saying + '" from ' + str(arent_u_n.responses))
             return saying
     for i in range(len(convo)):
-        think('testing if "' + str('/'.join(convo[i:len(convo)])) + '" exists')
         if os.path.exists('Memory/'+str('/'.join(conv[i:len(convo)]))):
             think('Memory/'+str('/'.join(conv[i:len(convo)])) + ' exists')
             answers=os.listdir('Memory/'+'/'.join(convo[i:len(convo)]))
             if len(answers)>0:
-                think('Memory/'+str('/'.join(conv[i:len(convo)]))+' contains ' + str(os.listdir('Memory/'+'/'.join(convo[i:len(convo)]))))
                 
                 saying=random.choice(answers).lower()
                 for i in all_resp:
@@ -185,8 +182,8 @@ def find_response(convo):
                 think('chose ' + saying + ' from ' + str(answers))
                 return saying
 
-        think(str('Memory/'+'/'.join(conv[i:len(convo)]))+' does not exist')
-        think('checking for recognized patterns')                   #Check for all of the sets' patterns
+
+        think('checking for recognized patterns...')                   #Check for all of the sets' patterns
         count=0
         choices=[]
         for i in all_resp:
@@ -199,10 +196,16 @@ def find_response(convo):
             saying=random.choice(i.responses)
             think('chose '+saying+' from ' + str(i.responses))
             return saying
+latestname=None
+latestfemale=None
+latestfemale=None
+latestpronoun=None
+latestname=None
 def main():
-    global conv
-
+    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname
+    think('getting input...')
     theysaid=str(getinput().lower().replace('/','').replace('\\','').replace('?','').replace('!',''))
+    think('input before preprocessing: {}'.format(theysaid))
     doc=nlp(theysaid)
     theysaid=theysaid.replace(talkingto,'!speaker!')
     theysaid=theysaid.replace('did you know that','')
@@ -212,16 +215,34 @@ def main():
     if theysaid=='reset':
         import reset
         raise SystemExit('Saving and exiting')
+    for i in theysaid.split(' '):
+        if i in male:
+            latestmale=i
+        if i in female:
+            latestfemale=i
+            print('setting latestfemale to {}'.format(latestfemale))
+        if i in names:
+            latestname=i
+    
+            
     for i in mynames:
         theysaid=theysaid.replace(i,'!speakingto!')
+    
     person_in_it=False
+    
     if theysaid.startswith('!speaker!'):
         add_noun(talkingto,'PERSON',theysaid.replace('!speaker!','').strip())
+    pretheysaid=theysaid                                                    #Saving theysaid before replacing pronouns so we can add !pronoun! later
+    for i in range(len(theysaid.split(' '))):
+        if theysaid.split(' ')[i]=='he':
+            theysaid.split(' ')[i]=latestmale
+        if theysaid.split(' ')[i]=='she':
+            theysaid.split(' ')[i]=latestfemale
+            
     for i in male:
         if theysaid.startswith(i):
             add_noun(i.strip(),'PERSON',theysaid.replace(i,''))
             person_in_it=True
-            
     for i in female:
         if theysaid.startswith(i):
             add_noun(i.strip(),'PERSON',theysaid.replace(i,''))
@@ -229,29 +250,34 @@ def main():
     if not person_in_it:        
         for ent in doc.ents:                         #Detect names first and if there are no names then run this \/ \/
             add_noun(ent.text,ent.label_,'')
-    theysaid=' '+theysaid+' '
-    for i in male:
-        theysaid=theysaid.replace(' '+i+' ',' !male! ')
-    for i in female:
-        theysaid=theysaid.replace(' '+i+' ',' !female! ')
+    
+    theysaid=' '+pretheysaid+' '
+    for n in names:
+        for i in theysaid.split(' '):
+            if i==n and n in male:
+                latestpronoun=' he '
+            if i==n and n in female:
+                latestpronoun=' she '
+    for i in [' he ',' she ']:
+        theysaid=theysaid.replace(i,' !pronoun! ')
+    for i in names:
+        theysaid=theysaid.replace(' '+i+' ',' !name! ')
     for i in positives:
         theysaid=theysaid.replace(' '+i+' ',' !pos! ')
     for i in negatives:
         theysaid=theysaid.replace(' '+i+' ',' !neg! ')
     theysaid=theysaid.strip()
     for i in all_resp:
-        think('testing for ' + str(i.tag) + ' responses')
         for j in i.responses:
             theysaid=theysaid.replace(' '+j+' ',' '+i.tag+' ')
-
     theysaid_mod_is=None
     contractions=[['do not','dont'],['will not','wont'],['can not','cant'],['are not','arent'],['is not','isnt'],['were not','werent']]
     for i in contractions:
         theysaid=theysaid.replace(i[0],i[1])
     #conjunctions_a=[' is ',' are ',' isnt ',' arent ',' were ',' werent ',' can ',' cant ', ' do ', ' dont ',' will ',' wont ']
-    
+    think('input after preprocessing: {}'.format(theysaid))
     conv.append(theysaid)
-    resp=find_response(conv)                 
+    resp=find_response(conv)
     idk=False
     if resp==None:
         idk=True
@@ -269,19 +295,31 @@ def main():
                 resp=str(i)
                     
     conv.append(resp)
-    real_resp=resp
-
-    real_resp=real_resp.replace('!male!',random.choice(male))
-
-    real_resp=real_resp.replace('!female!',random.choice(female))
-
+    real_resp=' '+resp+' '
+    if latestname!=None:
+        real_resp=real_resp.replace('!name!',latestname)
+    else:
+        for i in real_resp.split(' '):
+            if i=='!name!':
+                latestname=random.choice(names)
+                real_resp=real_resp.replace(i,latestname)
+    for i in real_resp.split(' '):
+        for n in names:
+            if i==n and n in male:
+                latestpronoun=' he '
+            if i==n and n in female:
+                latestpronoun=' she '
+        if i == '!pronoun!':
+            real_resp=real_resp.replace(' !pronoun! ',latestpronoun)
+        
     real_resp=real_resp.replace('!pos!',random.choice(positives))
 
     real_resp=real_resp.replace('!neg!',random.choice(negatives))
     real_resp=real_resp.replace('!speakingto!',talkingto)
     real_resp=real_resp.replace('!speaker!',random.choice(mynames))
     for i in all_resp:
-        real_resp.replace(i.tag,random.choice(i.responses))
+        real_resp=real_resp.replace(i.tag,random.choice(i.responses))
+    real_resp=real_resp.strip()
     say(real_resp)
     for i in range(len(conv)):
         if not os.path.exists('Memory/'+'/'.join(conv[i:len(conv)])):
