@@ -1,12 +1,13 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 0.9.6
+Version: 1.0.0
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2019-09-26
+Date: 2019-09-30
 """
 print(__doc__)
 import psutil
 import os
+import commands
 path=os.path.realpath(__file__).replace(os.path.basename(__file__),'').replace('\\','/')
 process = psutil.Process(os.getpid())
 import progressbar
@@ -215,6 +216,12 @@ def main():
     if theysaid=='reset':
         import reset
         raise SystemExit('Saving and exiting')
+    for command in commands.commands:
+        if theysaid in command.inp:
+            command.func()
+            say(command.response)
+            input('Press RETURN to exit')
+            raise SystemExit('Saving and exiting')
     for i in theysaid.split(' '):
         if i in male:
             latestmale=i
@@ -336,3 +343,19 @@ except Exception as e:
     else:
         print('\nAn unexpected error occured...:\n\n' + traceback.format_exc())
         think(traceback.format_exc())
+
+'''
+   © Copyright 2019 James Pinder
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+'''
