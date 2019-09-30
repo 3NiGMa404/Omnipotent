@@ -13,4 +13,4 @@ In the early stages of conversing with the AI, it doesn't know anything, so it w
 
 ------------------------------
 ## Make your own modifications
-Modify the `ginput.py` and `routput.py` files to change the method of gaining input and output respectively. You may want to use a text to speech program like pyttsx3 to make omnipotent speak it's responses instead of type them out! Or you could use a speech recognition library to allow the user to speak to omnipotent. The possibilities are endless!
+Modify the `ginput.py` and `routput.py` files to change the method of gaining input and output respectively. You may want to use a text to speech program like pyttsx3 to make omnipotent speak it's responses instead of type them out! Or you could use a speech recognition library to allow the user to speak to omnipotent. The possibilities are endless! You can also now edit the `commands.py` file to give the AI new commands that it can run when the user gives it specific inputs!
