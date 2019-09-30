@@ -10,3 +10,4 @@ textblob
 traceback
 spacy
 pyttsx3
+webbrowser
