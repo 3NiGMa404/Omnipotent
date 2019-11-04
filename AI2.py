@@ -1,10 +1,11 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.0.0
+Version: 1.0.2
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2019-09-30
+Date: 2019-11-05
 """
 print(__doc__)
+import euc_dist
 import psutil
 import os
 import commands
@@ -120,6 +121,20 @@ def add_noun(name,Class,data=''):
 print('done')
 bar.update(13)
 os.system('cls')
+print('\ninitiating emotions...',end='')
+mood=[max([-1,min([1,random.gauss(0,0.3)])]),max([-1,min([1,random.gauss(0,0.3)])])]#mood, polarity +happy -sad, subjectivity +passionate -calm
+st='I am feeling '
+if mood[0]>0.1 and mood[0]<0.5: st=st+'content and '
+elif mood[0]>0.5: st=st+'happy and '
+elif mood[0]>-0.1 and mood[0]<0.1: st=st+'neutral and '
+elif mood[0]<-0.1 and mood[0]>-0.5: st=st+'sad but '
+elif mood[0]<-0.5: st=st+'depressed but '
+if mood[1]>0.1 and mood[1]<0.5: st=st+'passionate'
+elif mood[1]>0.5: st=st+'very passionate'
+elif mood[1]>-0.1 and mood[1]<0.1: st=st+'indifferent'
+elif mood[1]<-0.1 and mood[1]>-0.5: st=st+'calm'
+elif mood[1]<-0.5: st=st+'very calm'
+think(st+'({},{})'.format(mood[0],mood[1]))
 def getinput():
     from ginput import git
     return git()
@@ -135,6 +150,7 @@ negatives=['no','nope','nah','definitely not',"i don't think so","i'm afraid not
 
 think('\nNEW SESSION')    
 def find_response(convo):
+    global mood
     if convo[0].startswith('can you '):
         if convo[0].replace('can you ','') in things_i_can_do:
             saying=random.choice(can_u_p.responses)
@@ -176,8 +192,17 @@ def find_response(convo):
             think('Memory/'+str('/'.join(conv[i:len(convo)])) + ' exists')
             answers=os.listdir('Memory/'+'/'.join(convo[i:len(convo)]))
             if len(answers)>0:
-                
-                saying=random.choice(answers).lower()
+                diff=[]
+                for i in answers:
+                    text_i=textblob.TextBlob(i)
+                    S_pol=[i.sentiment.polarity,i.sentiment.subjectivity]
+                    diff.append(round(2-euc_dist.calc(S_pol,mood),2))
+                answers_2=[]
+                for i in range(len(diff)):
+                    answers_2=[asnwers[i]]*(diff[i]*100)
+                saying=random.choice(answers_2).lower()
+                mood[0]=(mood[0]*0.97)+(S_pol[0]*0.03)
+                mood[1]=(mood[1]*0.97)+(S_pol[1]*0.03)
                 for i in all_resp:
                     saying=saying.replace(i.tag,random.choice(i.responses))
                 think('chose ' + saying + ' from ' + str(answers))
@@ -203,9 +228,12 @@ latestfemale=None
 latestpronoun=None
 latestname=None
 def main():
-    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname
+    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood
     think('getting input...')
     theysaid=str(getinput().lower().replace('/','').replace('\\','').replace('?','').replace('!',''))
+    txtblb=textblob.TextBlob(theysaid)
+    mood[0]=(mood[0]*0.95)+(theysaid.sentiment.polarity*0.05)
+    mood[1]=(mood[1]*0.95)+(theysaid.sentiment.subjectivity*0.05)
     think('input before preprocessing: {}'.format(theysaid))
     doc=nlp(theysaid)
     theysaid=theysaid.replace(talkingto,'!speaker!')
