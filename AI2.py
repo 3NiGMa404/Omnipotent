@@ -1,14 +1,19 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.0.2
+Version: 1.1.0
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2019-11-05
+Date: 2020-04-01
 """
+import warnings
+warnings.filterwarnings("ignore")
 print(__doc__)
 import euc_dist
 import psutil
 import os
 import commands
+import nltk
+from PyDictionary import PyDictionary
+dictionary=PyDictionary()
 path=os.path.realpath(__file__).replace(os.path.basename(__file__),'').replace('\\','/')
 process = psutil.Process(os.getpid())
 import progressbar
@@ -91,10 +96,14 @@ print('done')
 bar.update(12)
 os.system('cls')
 print('\nloading speech...')
-def think(string):
+def think(string,statedatetime=True):
     c=open('thoughts.txt','a+')
-    c.write('\n'+str(datetime.datetime.now())+': '+string)
+    if statedatetime:
+        c.write('\n'+str(datetime.datetime.now())+': '+string)
+    else:
+        c.write('\n'+string)
     c.close()
+think('\nNEW SESSION\n\n',statedatetime=False) 
 def say(text):
     from routput import ret
     ret(text)
@@ -148,7 +157,7 @@ negatives=['no','nope','nah','definitely not',"i don't think so","i'm afraid not
 
 #os.makedirs('hi/who are you')
 
-think('\nNEW SESSION')    
+   
 def find_response(convo):
     global mood
     if convo[0].startswith('can you '):
@@ -192,14 +201,17 @@ def find_response(convo):
             think('Memory/'+str('/'.join(conv[i:len(convo)])) + ' exists')
             answers=os.listdir('Memory/'+'/'.join(convo[i:len(convo)]))
             if len(answers)>0:
+                think('There are {} possible answers: {}'.format(len(answers),answers))
+                if len(answers)>1 and convo[-1] in answers:
+                    answers.remove(convo[-1])                    
                 diff=[]
                 for i in answers:
                     text_i=textblob.TextBlob(i)
-                    S_pol=[i.sentiment.polarity,i.sentiment.subjectivity]
+                    S_pol=[text_i.sentiment.polarity,text_i.sentiment.subjectivity]
                     diff.append(round(2-euc_dist.calc(S_pol,mood),2))
                 answers_2=[]
                 for i in range(len(diff)):
-                    answers_2=[asnwers[i]]*(diff[i]*100)
+                    answers_2=[answers[i]]*int((diff[i]*100))
                 saying=random.choice(answers_2).lower()
                 mood[0]=(mood[0]*0.97)+(S_pol[0]*0.03)
                 mood[1]=(mood[1]*0.97)+(S_pol[1]*0.03)
@@ -213,7 +225,8 @@ def find_response(convo):
         count=0
         choices=[]
         for i in all_resp:
-            for j in i.beginnings:
+            for h in i.beginnings:
+                j=h.replace(',','')
                 if convo[-1].startswith(j):
                     if count<2:
                         count=count+1
@@ -227,17 +240,19 @@ latestfemale=None
 latestfemale=None
 latestpronoun=None
 latestname=None
+latestnoun=None
 def main():
-    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood
+    resp=None
+    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood, latestnoun
     think('getting input...')
     theysaid=str(getinput().lower().replace('/','').replace('\\','').replace('?','').replace('!',''))
+    og_theysaid=theysaid
     txtblb=textblob.TextBlob(theysaid)
-    mood[0]=(mood[0]*0.95)+(theysaid.sentiment.polarity*0.05)
-    mood[1]=(mood[1]*0.95)+(theysaid.sentiment.subjectivity*0.05)
+    mood[0]=(mood[0]*0.95)+(txtblb.sentiment.polarity*0.05)
+    mood[1]=(mood[1]*0.95)+(txtblb.sentiment.subjectivity*0.05)
     think('input before preprocessing: {}'.format(theysaid))
     doc=nlp(theysaid)
     theysaid=theysaid.replace(talkingto,'!speaker!')
-    theysaid=theysaid.replace('did you know that','')
     if theysaid=='exit':
         think('Saving and exiting...')
         raise SystemExit('Saving and exiting')
@@ -250,21 +265,41 @@ def main():
             say(command.response)
             input('Press RETURN to exit')
             raise SystemExit('Saving and exiting')
+    if theysaid=='what is your name' or theysaid=='whats your name' or theysaid=='what is ur name' or theysaid=='whats ur name' or theysaid == 'what are you called'or theysaid == 'what are u called':
+        resp=random.choice(['my name is !speaker!','i am called !speaker!','call me !speaker!'])
+    if theysaid.startswith('you are '):
+        if txtblb.sentiment.polarity>0:
+            resp=random.choice(['!pos!, i am','!pos!','i am','correct','thats right'])
+            add_to_me=open('Me.txt','a')
+            add_to_me.write(theysaid.replace('you are ',''))
+            add_to_me.close()
+        else:
+            resp=random.choice(['!neg!, i am','!neg!','i am not','incorrect','wrong'])
+        
     for i in theysaid.split(' '):
         if i in male:
             latestmale=i
         if i in female:
             latestfemale=i
-            print('setting latestfemale to {}'.format(latestfemale))
         if i in names:
             latestname=i
-    
+        try:
+            if dictionary.meaning(i):
+                if list(dictionary.meaning(i).keys())[0] == 'Noun':
+                    latestnoun=i
+        except:
+            pass
+    if len(theysaid.split(' '))>1 and dictionary.meaning(theysaid.split(' ')[0]):
+        if list(dictionary.meaning(theysaid.split(' ')[0]).keys())[0] == 'Noun' and not theysaid.split(' ')[0] in male and not theysaid.split(' ')[0] in female and not theysaid.split(' ')[0] in names and theysaid.split(' ')[1] in ['is','are']:
+            add_noun(nltk.PorterStemmer(theysaid.split(' ')[0]).stem(),'NOUN',theysaid.replace(theysaid.split(' ')[0]+' ',''))
+            add_noun(nltk.PorterStemmer(theysaid.replace(theysaid.split(' ')[0]+' ',''),'DESCRIPTION',nltk.PorterStemmer(theysaid.split(' ')[0]).stem()))
+
+
             
     for i in mynames:
         theysaid=theysaid.replace(i,'!speakingto!')
     
     person_in_it=False
-    
     if theysaid.startswith('!speaker!'):
         add_noun(talkingto,'PERSON',theysaid.replace('!speaker!','').strip())
     pretheysaid=theysaid                                                    #Saving theysaid before replacing pronouns so we can add !pronoun! later
@@ -293,6 +328,23 @@ def main():
                 latestpronoun=' he '
             if i==n and n in female:
                 latestpronoun=' she '
+    if theysaid.startswith('is '):
+        try:
+            read_1=open('info/PERSON/'+theysaid.split(' ')[1],'r')
+            temp_text_1=read_1.read()
+            read_1.close()
+            if theysaid.replace('is ' + theysaid.split(' ')[1] +' ','') in temp_text_1.split('\n'):
+                resp=random.choice(positives)
+            elif theysaid.replace('is ' + theysaid.split(' ')[1] +' not ','') in temp_text_1.split('\n'):
+                resp=random.choice(negatives)
+            else:
+                resp=random.choice(negatives+positives+neutral+["i don't know"]*5)
+                if resp in positives:
+                    add_noun(theysaid.split(' ')[1],'PERSON','is ' + theysaid.replace('is ' + theysaid.split(' ')[1] +' ',''))
+                else:
+                    add_noun(theysaid.split(' ')[1],'PERSON','is not ' + theysaid.replace('is ' + theysaid.split(' ')[1] +' ',''))
+        except:
+            pass                             #Maybe add 'is' set here
     for i in [' he ',' she ']:
         theysaid=theysaid.replace(i,' !pronoun! ')
     for i in names:
@@ -306,13 +358,18 @@ def main():
         for j in i.responses:
             theysaid=theysaid.replace(' '+j+' ',' '+i.tag+' ')
     theysaid_mod_is=None
-    contractions=[['do not','dont'],['will not','wont'],['can not','cant'],['are not','arent'],['is not','isnt'],['were not','werent']]
+    contractions=[['do not','dont'],['will not','wont'],['can not','cant'],['are not','arent'],['is not','isnt'],['were not','werent'],['i am','im'],["i'm","im"]]
     for i in contractions:
         theysaid=theysaid.replace(i[0],i[1])
     #conjunctions_a=[' is ',' are ',' isnt ',' arent ',' were ',' werent ',' can ',' cant ', ' do ', ' dont ',' will ',' wont ']
     think('input after preprocessing: {}'.format(theysaid))
+    og_conv=list(conv)
+    og_conv.append(og_theysaid)
     conv.append(theysaid)
-    resp=find_response(conv)
+    if resp==None:
+        resp=find_response(og_conv)
+    if resp==None:
+        resp=find_response(conv)
     idk=False
     if resp==None:
         idk=True
@@ -322,13 +379,16 @@ def main():
                                   
                                   
         conv=[]
+        og_conv=[]
         think('1: '+str(os.listdir()))
         os.chdir(path)
         think('2: '+str(os.listdir()))
         for i in os.listdir('Memory/'):             
             if len(os.listdir('Memory/'+str(i))) == 0:
                 resp=str(i)
-                    
+
+    if resp==None:
+        resp=theysaid
     conv.append(resp)
     real_resp=' '+resp+' '
     if latestname!=None:
@@ -355,12 +415,21 @@ def main():
     for i in all_resp:
         real_resp=real_resp.replace(i.tag,random.choice(i.responses))
     real_resp=real_resp.strip()
+    og_conv.append(real_resp)
     say(real_resp)
     for i in range(len(conv)):
         if not os.path.exists('Memory/'+'/'.join(conv[i:len(conv)])):
             os.makedirs('Memory/'+'/'.join(conv[i:len(conv)]))
             if idk:
                 shutil.rmtree('Memory/'+resp+'/')
+    for i in range(len(conv)):
+        if not os.path.exists('Memory/'+'/'.join(og_conv[i:len(og_conv)])):
+            os.makedirs('Memory/'+'/'.join(og_conv[i:len(og_conv)]))
+            if idk:
+                shutil.rmtree('Memory/'+real_resp+'/')
+    txtblb=txtblb=textblob.TextBlob(resp)
+    mood[0]=(mood[0]*0.96)+(txtblb.sentiment.polarity*0.04)
+    mood[1]=(mood[1]*0.96)+(txtblb.sentiment.subjectivity*0.04)
 try:
     os.system('cls')
     while True:
@@ -373,7 +442,7 @@ except Exception as e:
         think(traceback.format_exc())
 
 '''
-   © Copyright 2019 James Pinder
+   © Copyright 2020 James Pinder
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

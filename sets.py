@@ -60,8 +60,10 @@ were_u_p=yesnoset(['i was','yeah, i was']+positives,["were you "],"!were_u_p!")
 were_u_n=yesnoset(["i wasn't", "nah, i wasn't"]+negatives,["were you "],"!were_u_n!")
 are_u_p=yesnoset(['i am','yeah, i am','i think i am']+positives,["are you "],"!are_u_p!")
 are_u_n=yesnoset(['i am not',"nah, i'm not","i don't think i am"]+negatives,["are you "],"!are_u_n!")
-things_i_am=['a chatbot','an ai','an a.i','smart','able to talk','able to read','able to speak','able to understand','able to understand me','an artificial intelligence','called omnipotent']
-
+me=open('Me.txt','r')
+me_r=me.read()
+me.close()
+things_i_am=me_r.split('\n')
 arent_u_p=yesnoset(['i am','i think i am']+positives,["arent you ","aren't you "],"!arent_u_p!")
 arent_u_n=yesnoset(['i am not',"i don't think i am"]+negatives,["arent you ","aren't you "],"!arent_u_n!")
 
@@ -77,5 +79,6 @@ are_noun_p=yesnoset(['they are','i think they are','yes, they are']+positives,["
 are_noun_n=yesnoset(['they are not',"i don't think they are","nah, they're not"]+negatives,["are "],"!are_noun_n!",True)
 do_noun_p=yesnoset(['they do','i think they do','yeah, they do']+positives,['do '],"!do_noun_p!"'!do_noun_p!',True) #Do noun p
 do_noun_n=yesnoset(["they don't",'they do not',"i don't think they do"]+negatives,['do '],"!do_noun_n!"'!do_noun_n!',True)
+
 
 all_resp=[do_you_p,do_you_n,do_i_p,dont_i_p,dont_i_n,dont_u_p,dont_u_n,do_i_n,can_i_p,can_i_n,can_u_p,can_u_n,will_i_p,will_i_n,will_u_p,will_u_n,wont_i_p,wont_i_n,wont_u_p,wont_u_n,would_i_p,would_i_n,would_u_p,would_u_n,wouldnt_i_p,wouldnt_i_n,wouldnt_u_p,wouldnt_u_n,could_i_p,could_i_n,could_u_p,could_u_n,couldnt_i_p,couldnt_i_n,couldnt_u_p,couldnt_u_n,should_i_p,should_i_n,should_u_p,should_u_n,shouldnt_i_p,shouldnt_i_n,shouldnt_u_p,shouldnt_u_n,was_i_p,was_i_n,were_u_p,were_u_n,are_u_p,are_u_n,arent_u_p,arent_u_n,cant_u_p,cant_u_n,cant_i_p,cant_i_n,dont_noun_p,dont_noun_n,arent_noun_p,arent_noun_n,are_noun_p,are_noun_n,do_noun_p,do_noun_n]
