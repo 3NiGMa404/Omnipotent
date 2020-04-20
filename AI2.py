@@ -131,7 +131,7 @@ print('done')
 bar.update(13)
 os.system('cls')
 print('\ninitiating emotions...',end='')
-mood=[max([-1,min([1,random.gauss(0,0.3)])]),max([-1,min([1,random.gauss(0,0.3)])])]#mood, polarity +happy -sad, subjectivity +passionate -calm
+mood=[max([-1,min([1,random.gauss(0,0.3)])]),max([-1,min([1,random.gauss(0,0.2)])])]#mood, polarity +happy -sad, subjectivity +passionate -calm
 st='I am feeling '
 if mood[0]>0.1 and mood[0]<0.5: st=st+'content and '
 elif mood[0]>0.5: st=st+'happy and '
@@ -226,14 +226,16 @@ def find_response(convo):
         choices=[]
         for i in all_resp:
             for h in i.beginnings:
+                print(h)
                 j=h.replace(',','')
                 if convo[-1].startswith(j):
+                    think('{} startswith {} ({})'.format(convo[-1],j,i))
                     if count<2:
                         count=count+1
-                        choices.append(i.responses)
+                        choices.extend(i.responses)
         if len(choices)>1:
-            saying=random.choice(i.responses)
-            think('chose '+saying+' from ' + str(i.responses))
+            saying=random.choice(choices)
+            think('chose '+saying+' from ' + str(choices))
             return saying
 latestname=None
 latestfemale=None
@@ -242,6 +244,19 @@ latestpronoun=None
 latestname=None
 latestnoun=None
 def main():
+    hour=int(datetime.datetime.now().strftime("%H"))
+    time_words=['morning','afternoon','evening','night']
+    if hour<12:
+        current_time_word='morning'
+    if hour>12 and hour<19:
+        current_time_word='afternoon'
+    if hour>18 and hour<21:
+        current_time_word='evening'
+    if hour>20:
+        current_time_word='night'
+    time_words.remove(current_time_word)
+    
+        
     resp=None
     global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood, latestnoun
     think('getting input...')
@@ -262,20 +277,52 @@ def main():
     for command in commands.commands:
         if theysaid in command.inp:
             command.func()
-            say(command.response)
+            say(random.choice(command.responses))
             input('Press RETURN to exit')
             raise SystemExit('Saving and exiting')
     if theysaid=='what is your name' or theysaid=='whats your name' or theysaid=='what is ur name' or theysaid=='whats ur name' or theysaid == 'what are you called'or theysaid == 'what are u called':
         resp=random.choice(['my name is !speaker!','i am called !speaker!','call me !speaker!'])
-    if theysaid.startswith('you are '):
-        if txtblb.sentiment.polarity>0:
-            resp=random.choice(['!pos!, i am','!pos!','i am','correct','thats right'])
-            add_to_me=open('Me.txt','a')
-            add_to_me.write(theysaid.replace('you are ',''))
-            add_to_me.close()
+    if theysaid.startswith('you are ') or theysaid.startswith('are you '):
+        if theysaid.replace('you are ','').replace('are you ','') in things_i_am:
+            resp=random.choice(['!pos!, i am','!pos!','i am'])
         else:
-            resp=random.choice(['!neg!, i am','!neg!','i am not','incorrect','wrong'])
         
+            if textblob.TextBlob(theysaid.replace('you are ','').replace('are you ','')).sentiment.polarity>0:
+                resp=random.choice(['!pos!, i am','!pos!','i am'])
+                add_to_me=open('Me.txt','a')
+                add_to_me.write(theysaid.replace('you are ',''))
+                add_to_me.close()
+            else:
+                resp=random.choice(['!neg!, i am','!neg!','i am not'])
+    if theysaid.startswith('tell me about '):
+        try:
+            rd_person_info=open('Info/PERSON/'+theysaid.replace('tell me about ','')+'.txt','r')
+            person_info=rd_person_info.read()
+            rd_person_info.close()
+            temp_pronoun=theysaid.replace('tell me about ','')
+            if 'male' in person_info.split('\n') or 'is male' in person_info.split('\n'):
+                temp_pronoun='he'
+            if 'female' in person_info.split('\n') or 'is female' in person_info.split('\n'):
+                temp_pronoun='she'
+            choices=person_info.split('\n')
+            try:
+                choices.remove('male')
+                choices.remove('female')
+            except:
+                pass
+            
+            if len(choices)>1:
+                facts=[random.choice(choices)]
+                choices.remove(facts[0])
+                facts.append(choices)
+                resp=temp_pronoun+facts[0]+' and '+temp_pronoun+facts[1]
+        except Exception as e:
+            think(e)
+            if theysaid.replace('tell me about ','') in male:
+                resp=random.choice(['i know nothing about','i dont know anything about ','i dont know ','i dont think i know ','i dont think i know anything about ','i cant tell you about '])+random.choice(['him','them',theysaid.replace('tell me about ','')])
+            if theysaid.replace('tell me about ','') in female:
+                resp=random.choice(['i know nothing about','i dont know anything about ','i dont know ','i dont think i know ','i dont think i know anything about ','i cant tell you about '])+random.choice(['her','them',theysaid.replace('tell me about ','')])
+                
     for i in theysaid.split(' '):
         if i in male:
             latestmale=i
@@ -295,7 +342,7 @@ def main():
             add_noun(nltk.PorterStemmer(theysaid.replace(theysaid.split(' ')[0]+' ',''),'DESCRIPTION',nltk.PorterStemmer(theysaid.split(' ')[0]).stem()))
 
 
-            
+    
     for i in mynames:
         theysaid=theysaid.replace(i,'!speakingto!')
     
@@ -304,6 +351,10 @@ def main():
         add_noun(talkingto,'PERSON',theysaid.replace('!speaker!','').strip())
     pretheysaid=theysaid                                                    #Saving theysaid before replacing pronouns so we can add !pronoun! later
     for i in range(len(theysaid.split(' '))):
+        if i == current_time_word:
+            theysaid=theysaid.replace(theysaid.split(' ')[i],'!currenttimeword!')
+        if i in time_words:
+            theysaid=theysaid.replace(theysaid.split(' ')[i],'!timeword!')
         if theysaid.split(' ')[i]=='he':
             theysaid.split(' ')[i]=latestmale
         if theysaid.split(' ')[i]=='she':
@@ -406,17 +457,22 @@ def main():
                 latestpronoun=' she '
         if i == '!pronoun!':
             real_resp=real_resp.replace(' !pronoun! ',latestpronoun)
-        
+    
     real_resp=real_resp.replace('!pos!',random.choice(positives))
-
     real_resp=real_resp.replace('!neg!',random.choice(negatives))
     real_resp=real_resp.replace('!speakingto!',talkingto)
     real_resp=real_resp.replace('!speaker!',random.choice(mynames))
+    real_resp=real_resp.replace('!currenttimeword!',current_time_word)
+    real_resp=real_resp.replace('!currenttime!',random.choice(time_words))
     for i in all_resp:
         real_resp=real_resp.replace(i.tag,random.choice(i.responses))
     real_resp=real_resp.strip()
     og_conv.append(real_resp)
+    think('og_conv: {}'.format(og_conv))
     say(real_resp)
+    conv_str='/'.join(conv)
+    tags=int(conv_str.count('!')/2)                                            #Keep og conv, replace tags one by one from there
+    
     for i in range(len(conv)):
         if not os.path.exists('Memory/'+'/'.join(conv[i:len(conv)])):
             os.makedirs('Memory/'+'/'.join(conv[i:len(conv)]))
@@ -432,7 +488,7 @@ def main():
     mood[1]=(mood[1]*0.96)+(txtblb.sentiment.subjectivity*0.04)
 try:
     os.system('cls')
-    while True:
+    while 1:
         main()
 except Exception as e:
     if e=='Saving and exiting':

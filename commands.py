@@ -13,11 +13,10 @@ import os
 def shutdown():
     os.system('shutdown /s')
 
-commands.append(command(['shutdown'],shutdown,'shutting down...'))
+commands.append(command(['shutdown'],shutdown,['shutting down...','shutting down the system...']))
 
 #Example, open browser
 import webbrowser
 def openbrowser():
     webbrowser.open('google.com')
-commands.append(command(['open browser','browser'],openbrowser,'opening...'))
-                
+commands.append(command(['open browser','browser'],openbrowser,['opening...','opening browser...']))          
