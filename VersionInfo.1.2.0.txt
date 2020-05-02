@@ -1,0 +1,55 @@
+Version: 1.2.0 (MAJOR)
+
+Updates:
+
+- (+0.0.9)	Modified the database of generic responses (added 50-100 new responses) and fixed some bugs!
+
+Planned Updates:
+
+- (+0.0.2)Reverse questions to make statements and vice-versa (for nouns too)
+
+
+- (+0.0.2)Understand how some questions end and save the statements before them. ie.
+	>: John is cool, isn't he?
+	<Save 'is cool' under Info/PERSON/John>
+	<Set pronoun to 'he'>
+	< He is
+
+
+- (+0.0.1)Understand multiple entities by splitting at 'and'. ie.
+	>: John and Jill are cool
+	<Save 'is cool' to Info/PERSON/John and Info/PERSON/Jill> Note: 'is' is singular of 'are'
+
+
+- (+0.0.4)Add conversation sorter external program, gathers an example conversation, 
+	  tags it and adds it to memory, also saves all data in it!
+
+- (+0.0.1)When speaker says 'i' add that to their file
+
+- (+0.0.1)Convert i and you (verb) to i and you (verb)s. ie.
+	>:I love cats
+	<!speaker! love+'s' cats>
+	<Info/PERSON/James add 'loves cats'>
+
+- (+0.0.2) When replacing people's names, check if they are actually description and if they are relevant to the context. ie.
+	>: Hello
+	<  Hi
+	>: John is cool
+	<!male! is cool/john.txt>
+-------------------------
+	<  Hello
+	>: Hi
+	<search names, check who is usually said in the place of male, if none are found, check if male and if cool, if none are found, find most recently mentioned male, if none are found, pick random unknown male>
+	<  John is cool
+
+
+- (+0.0.4) Add generalised !noun!, !adjective! and !verb! tags, also add latestnoun and latestverb tags ie.
+	- Cats are great
+
+- (+0.0.5) Create all combonations of tagged and untagged convos. ie.
+	<Convo=['are you good', 'yes, i am good, are you good, omnipotent', 'no, i am not good']>
+	< save ['are you good', '!positive!, i am good, are you good, omnipotent', 'no, i am not good'], ['are you good', 'yes, i am good, are you good, !speakingto!', 'no, i am not good'], ['are you good', 'yes, i am good, are you good, omnipotent', '!negative!, i am not good']
+	<... and everything in between>
+- (+0.0.2) Give AI "tools" to allow it to interact with the computer, user, and other computers (attatch to Q learner)
+
+-(+0.0.1) Store when each user was last here, then respond when asked "was james here today?"
