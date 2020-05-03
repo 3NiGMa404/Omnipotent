@@ -8,7 +8,7 @@ datetime
 random
 colorama
 progressbar
-PyDictionary
+inflect
 nltk
 os
 psutil
