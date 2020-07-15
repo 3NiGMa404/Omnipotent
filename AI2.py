@@ -1,8 +1,8 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.2.0
+Version: 1.2.3
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2020-05-02
+Date: 2020-07-08
 """
 from sets import *
 import pyttsx3
@@ -15,8 +15,10 @@ import datetime
 import random
 import colorama
 import progressbar
+import pyinflect
 import inflect
 import nltk
+from itertools import product
 from nltk.corpus import wordnet as wn
 import commands
 import os
@@ -25,13 +27,15 @@ import euc_dist
 import warnings
 warnings.filterwarnings("ignore")
 print(__doc__)
+os.system('cls')
 inflect = inflect.engine()
 path = os.path.realpath(__file__).replace(
     os.path.basename(__file__), '').replace(
         '\\', '/')
 process = psutil.Process(os.getpid())
 colorama.init()
-bar = progressbar.ProgressBar(max_value=13)
+bar = progressbar.ProgressBar(maxval=13)
+bar.start()
 os.system('cls')
 bar.update(1)
 print('\nloading datetime...', end='')
@@ -69,12 +73,12 @@ print('\nloading sets...')
 print('done')
 os.system('cls')
 bar.update(9)
-print('\nloading databases...')
+print('\nloading database...')
 nlp = spacy.load("en_core_web_sm")
 maleraw = open('male.txt', 'r').read().split('\n')
 male = []
 for i in maleraw:
-    male.append(i.lower())
+    male.append(i.lower().strip())
 print('done')
 bar.update(10)
 os.system('cls')
@@ -82,7 +86,7 @@ print('\nloading another database...')
 femaleraw = open('female.txt', 'r').read().split('\n')
 female = []
 for j in femaleraw:
-    female.append(j.lower())
+    female.append(j.lower().strip())
 names = male + female
 print('done')
 bar.update(11)
@@ -134,13 +138,7 @@ def add_noun(name, Class, data=''):
                     # male and female names for sorting otherwise
                     openinfo = open('Info/' + i + '/' + name + '.txt', 'a')
 
-                    # Add something here to add data of gender whenever a
-                    # PERSON class comes through
-    if name in female:
-        data = data + '\n/female'
-    if name in male:
-        data = data + '\n/male'
-    openinfo.write(data)
+    openinfo.write('\n' + data)
     openinfo.close()
 
 
@@ -181,28 +179,33 @@ def getinput():
 
 
 mynames = ['omnipotent']
+os.system('cls')
 talkingto = input('who are you? ')
-add_noun(talkingto, 'PERSON')
+gend = 'unknown'
+if talkingto in male:
+    add_noun(talkingto, 'PERSON', 'is male')
+    add_noun(talkingto, 'PERSON', '/male')
+    gend = 'male'
+elif talkingto in female:
+    add_noun(talkingto, 'PERSON', 'is female')
+    add_noun(talkingto, 'PERSON', '/female')
+    gend = 'female'
+else:
+    add_noun(talkingto, 'PERSON')
+think("{}'s gender is {}".format(talkingto, gend))
 conv = []
-positives = [
-    'yes',
-    'yep',
-    'for sure',
-    'affirmative',
-    'definitely',
-    "i'm afraid so",
-    'i think so']
-neutral = ['maybe', 'maybe, maybe not']
-negatives = [
-    'no',
-    'nope',
-    'nah',
-    'definitely not',
-    "i don't think so",
-    "i'm afraid not",
-    'nae']
 
-#os.makedirs('hi/who are you')
+neutral = ['maybe', 'maybe, maybe not']
+
+
+def thisfunction(lst, s):
+    if len(lst) > 0:
+        for first, *rest in lst:
+            s = s.replace(first, '{}', 1)
+        for p in product(*lst):
+            yield s.format(*p)
+    else:
+        yield s
 
 
 def find_response(convo):
@@ -262,10 +265,14 @@ def find_response(convo):
                     diff.append(round(2 - euc_dist.calc(S_pol, mood), 2))
                 answers_2 = []
                 for i in range(len(diff)):
-                    answers_2 = [answers[i]] * int((diff[i] * 100))
+                    if '!' not in answers[i]:
+                        answers_2.append(
+                            answers[i] * (2 * int((diff[i] * 100))))
+                    else:
+                        answers_2.append(answers[i] * (int((diff[i] * 100))))
                 saying = random.choice(answers_2).lower()
-                mood[0] = (mood[0] * 0.97) + (S_pol[0] * 0.03)
-                mood[1] = (mood[1] * 0.97) + (S_pol[1] * 0.03)
+                mood[0] = (mood[0] * 0.98) + (S_pol[0] * 0.02)
+                mood[1] = (mood[1] * 0.98) + (S_pol[1] * 0.02)
                 for i in all_resp:
                     saying = saying.replace(i.tag, random.choice(i.responses))
                 think('chose ' + saying + ' from ' + str(answers))
@@ -275,25 +282,26 @@ def find_response(convo):
         think('checking for recognized patterns...')
         count = 0
         choices = []
+
         for i in all_resp:
             for h in i.beginnings:
-                print(h)
                 j = h.replace(',', '')
                 if convo[-1].startswith(j):
                     think('{} startswith {} ({})'.format(convo[-1], j, i))
-                    if count < 3:
+                    if count < 2:
                         count = count + 1
                         if i.savenoun:
                             for response in i.responses:
                                 if inflect.singular_noun(
                                         convo[-1].split(' ')[1]):
-                                    choices.extend(
+                                    choices.append(
                                         response.replace('it', 'they'))
                                 else:
-                                    choices.extend(
+                                    choices.append(
                                         response.replace('they', 'it'))
                         else:
-                            choices.extend(responses)
+                            think('{}:{}'.format(i.tag, i.responses))
+                            choices.extend(i.responses)
 
         if len(choices) > 1:
             saying = random.choice(choices)
@@ -303,19 +311,66 @@ def find_response(convo):
 
 latestname = None
 latestfemale = None
-latestfemale = None
+latestmale = None
 latestpronoun = None
-latestname = None
-latestnoun = None
-latestnounplural = None
+
+
+def makethird(string, male=True):
+    string = string.replace('i ', '', 1)
+    for i in string.split(' '):
+        if pyinflect.getInflection(i, tag='VBZ'):
+            if male:
+                return string.replace(
+                    i,
+                    pyinflect.getInflection(
+                        i,
+                        tag='VBZ')[0]).replace(
+                    'my',
+                    'his').replace(
+                    'mine',
+                    'his').replace(
+                    ' i ',
+                    ' he ').replace(
+                        'am',
+                    'is')
+            else:
+                return string.replace(
+                    i,
+                    pyinflect.getInflection(
+                        i,
+                        tag='VBZ')[0]).replace(
+                    'my',
+                    'her').replace(
+                    'mine',
+                    'her').replace(
+                    ' i ',
+                    ' she ').replace(
+                        'am',
+                    'is')
+
+
+replacements = {}
+for i in all_resp:
+    for j in i.responses:
+        replacements.update({j: i.tag})
+replacements.update({talkingto: '!speaker!'})
+for i in mynames:
+    replacements.update({i: '!speakingto!'})
+for i in positives:
+    replacements.update({i: '!pos!'})
+for i in negatives:
+    replacements.update({i: '!neg!'})
+for i in ['he', 'she']:
+    replacements.update({i: '!latestpronoun!'})
 
 
 def main():
+
     hour = int(datetime.datetime.now().strftime("%H"))
     time_words = ['morning', 'afternoon', 'evening', 'night']
     if hour < 12:
         current_time_word = 'morning'
-    if hour > 12 and hour < 19:
+    if hour > 11 and hour < 19:
         current_time_word = 'afternoon'
     if hour > 18 and hour < 21:
         current_time_word = 'evening'
@@ -324,7 +379,7 @@ def main():
     time_words.remove(current_time_word)
 
     resp = None
-    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood, latestnoun
+    global conv, latestname, latestfemale, latestmale, latestpronoun, latestname, mood
     think('getting input...')
     theysaid = str(
         getinput().lower().replace(
@@ -335,13 +390,17 @@ def main():
                 '?',
                 '').replace(
                     '!',
+                    '').replace(
+                        "'",
+                        '').replace(
+                            '"',
             ''))
     og_theysaid = theysaid
     txtblb = textblob.TextBlob(theysaid)
     mood[0] = (mood[0] * 0.95) + (txtblb.sentiment.polarity * 0.05)
     mood[1] = (mood[1] * 0.95) + (txtblb.sentiment.subjectivity * 0.05)
     think('input before preprocessing: {}'.format(theysaid))
-    doc = nlp(theysaid)
+
     theysaid = theysaid.replace(talkingto, '!speaker!')
     if theysaid == 'exit':
         think('Saving and exiting...')
@@ -355,9 +414,126 @@ def main():
             say(random.choice(command.responses))
             input('Press RETURN to exit')
             raise SystemExit('Saving and exiting')
-    if theysaid == 'what is your name' or theysaid == 'whats your name' or theysaid == 'what is ur name' or theysaid == 'whats ur name' or theysaid == 'what are you called'or theysaid == 'what are u called':
-        resp = random.choice(
+    choices_temp = []
+    if theysaid == 'what is your name' or theysaid == 'whats your name' or theysaid == 'what is ur name' or theysaid == 'whats ur name' or theysaid == 'what are you called' or theysaid == 'what are u called':
+        choices_temp.append(
             ['my name is !speaker!', 'i am called !speaker!', 'call me !speaker!'])
+    think('theysaid is {}'.format(theysaid))
+    opinionated = {
+        'dont like': -0.3,
+        'dislike': -0.4,
+        'really dont like': -0.5,
+        'really dislike': -0.5,
+        'hate': -0.75,
+        'really hate': -0.85,
+        'despise': -0.95,
+        'like': 0.3,
+        'really like': 0.5,
+        'dont dislike': 0,
+        'dont mind': 0.1,
+        'really dont mind': 0.2,
+        'love': 0.8,
+        'really love': 0.9,
+        'adore': 0.95}
+    opiniated_reversed_pos = {
+        0.95: 'adore',
+        0.9: 'really love',
+        0.8: 'love',
+        0.5: 'really like',
+        0.3: 'like',
+        0.2: 'really dont mind',
+        0.1: 'dont mind'}
+    opiniated_reversed_neg = {-0.95: 'despise', -0.85: 'really hate', -0.75: 'hate', -0.5: 'really dislike', -
+                              0.5: 'really dont like', -0.4: 'dislike', -0.3: 'dont like', -0.1: 'am not fond of'}
+    for i in list(opinionated.keys()):
+        if theysaid.startswith('i ' + i) and not resp:
+            try:
+                rd = open(
+                    'Info/Opinions/' +
+                    theysaid.replace(
+                        'i ' +
+                        i +
+                        ' ',
+                        '') +
+                    '.txt',
+                    'r')
+                opinion = float(rd.read())
+                rd.close()
+                newopinion = opinion + (random.gauss(0.05, 0.01) * min(
+                    max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1))
+                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '') + '.txt', 'w+') as opopinion:
+                    opopinion.write(str(newopinion))
+                opinion = newopinion
+            except BaseException:
+                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '') + '.txt', 'w+') as opopinion:
+                    opinion = min(
+                        max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1)
+                    opopinion.write(str(opinion))
+            if opinion > 0:
+                for cur in opiniated_reversed_pos:
+                    if opinion > cur:
+                        howmuchilikeit = opiniated_reversed_pos[cur]
+                        if howmuchilikeit == i and random.randint(1, 3) == 3:
+                            resp = random.choice(
+                                ['as do i', 'same', 'same here', 'agreed'])
+                        if not resp:
+                            if inflect.singular_noun(
+                                    theysaid.replace('i ' + i + ' ', '')):
+                                resp = random.choice([random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' them'])
+                            else:
+                                resp = random.choice([random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' it'])
+            if opinion < 0:
+                for cur in opiniated_reversed_pos:
+                    if opinion < cur:
+                        howmuchilikeit = opiniated_reversed_neg[cur]
+                        if howmuchilikeit == i and random.randint(1, 3) == 3:
+                            resp = random.choice(
+                                ['same', 'same here', 'agreed'])
+                        if not resp:
+                            if inflect.singular_noun(
+                                    theysaid.replace('i ' + i + ' ', '')):
+                                resp = random.choice([random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' them'])
+                            else:
+                                resp = random.choice([random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' it'])
+            if not resp:
+                if inflect.singular_noun(theysaid.replace('i ' + i + ' ', '')):
+                    resp = random.choice(['i ',
+                                          'well i ']) + random.choice(['do not have an opinion on ',
+                                                                       'dont have any feeling towards ',
+                                                                       'feel indifferent about ']) + random.choice([theysaid.replace('i ' + i + ' ',
+                                                                                                                                     ''),
+                                                                                                                    'them'])
+                else:
+                    resp = random.choice(['i ',
+                                          'well i ']) + random.choice(['do not have an opinion on ',
+                                                                       'dont have any feeling towards ',
+                                                                       'feel indifferent about ']) + random.choice([theysaid.replace('i ' + i + ' ',
+                                                                                                                                     ''),
+                                                                                                                    'it'])
+
+    if theysaid.startswith('how are you') or theysaid.startswith('how are u'):
+        think('Said how are you')
+        if mood[0] > 0:
+            choices_temp.extend(['good thanks how are you',
+                                 'im good',
+                                 'good',
+                                 'pretty good',
+                                 'im pretty good',
+                                 'good thanks'])
+        elif mood[0] < 0:
+            choices_temp.extend(['alright how are you',
+                                 'im alright',
+                                 'im fine',
+                                 'im fine how are you',
+                                 'im doing alright',
+                                 'alright'])
+        else:
+            choices_temp.append('lit')
+            think('Choices temp is now {}'.format(choices_temp))
     if theysaid.startswith('you are ') or theysaid.startswith('are you '):
         if theysaid.replace(
                 'you are ',
@@ -379,8 +555,13 @@ def main():
                 add_to_me.close()
             else:
                 resp = random.choice(['!neg!, i am', '!neg!', 'i am not'])
-    if theysaid.startswith('i '):
-        add_noun(talkingto, 'PERSON', theysaid.replace('i ', ''))
+    think('checking if {} starts with i'.format(theysaid))
+    if len(theysaid) > 1 and theysaid.startswith('i ') and 'VB' in pyinflect.getAllInflections(
+            theysaid.split(' ')[1]) and not theysaid.split(' ')[1] in [
+            'do', 'can', 'will', 'would', 'could', 'should']:
+        think('ok this is interesting')
+        add_noun(talkingto, 'PERSON', makethird(theysaid, gend == 'male'))
+        think(makethird(theysaid, gend == 'male'))
         if theysaid.startswith('i can '):
             if theysaid.replace('i can ', '') in things_i_can_do:
                 resp = random.choice(
@@ -402,6 +583,8 @@ def main():
 
     if theysaid.startswith('tell me about '):
         try:
+            if theysaid.replace('tell me about ', '') == '!speaker!':
+                theysaid = theysaid.replace('!speaker!', talkingto)
             rd_person_info = open(
                 'Info/PERSON/' +
                 theysaid.replace(
@@ -420,21 +603,22 @@ def main():
                 temp_pronoun = 'she'
             choices = person_info.split('\n')
             try:
-                choices.remove('male')
-                choices.remove('female')
+                for i in choices:
+                    if len(i) < 2:
+                        choices.remove(i)
+                choices.remove('/male')
+                choices.remove('/female')
             except BaseException:
                 pass
 
-            if len(choices) > 1:
-                facts = [random.choice(choices)]
-                choices.remove(facts[0])
-                facts.append(choices)
-                resp = temp_pronoun + facts[0] + \
-                    ' and ' + temp_pronoun + facts[1]
+            if len(choices) > 2:
+                facts = random.sample(choices, 2)
+                resp = temp_pronoun + ' ' + \
+                    facts[0] + ' and ' + temp_pronoun + ' ' + facts[1]
             else:
                 raise Exception('No data (choices < 1)')
         except Exception as e:
-            think(e)
+            think(str(e))
             if theysaid.replace('tell me about ', '') in male:
                 resp = random.choice(['i know nothing about',
                                       'i dont know anything about ',
@@ -455,7 +639,7 @@ def main():
                                                                                   'them',
                                                                                   theysaid.replace('tell me about ',
                                                                                                    '')])
-
+            theysaid.replace(talkingto, '!speaker!')
     for i in theysaid.split(' '):
         if i in male:
             latestmale = i
@@ -463,12 +647,6 @@ def main():
             latestfemale = i
         if i in names or os.path.isfile('Info/PERSON/' + i + '.txt'):
             latestname = i
-        try:
-            if wn.synsets(i)[0].pos() == 'n':
-                latestnoun = i
-                latestpluralnoun = inflect.plural_noun(i)
-        except BaseException:
-            pass
     try:
         if len(theysaid.split(' ')) > 1:
             if wn.synsets(theysaid.split(' ')[0])[0].pos() == 'n' and not theysaid.split(' ')[0] in male and not theysaid.split(' ')[0] in female and not theysaid.split(
@@ -520,20 +698,19 @@ def main():
         if theysaid.startswith(i):
             add_noun(i.strip(), 'PERSON', theysaid.replace(i, ''))
             person_in_it = True
-    if not person_in_it:
-        for ent in doc.ents:  # Detect names first and if there are no names then run this \/ \/
-            add_noun(ent.text, ent.label_, '')
 
     theysaid = ' ' + pretheysaid + ' '
     for n in names:
         for i in theysaid.split(' '):
             if i == n and n in male:
                 latestpronoun = ' he '
+
             if i == n and n in female:
                 latestpronoun = ' she '
+
     if theysaid.startswith('is '):
         try:
-            read_1 = open('info/PERSON/' + theysaid.split(' ')[1], 'r')
+            read_1 = open('Info/PERSON/' + theysaid.split(' ')[1], 'r')
             temp_text_1 = read_1.read()
             read_1.close()
             if theysaid.replace(
@@ -567,20 +744,24 @@ def main():
                             ''))
         except BaseException:
             pass  # Maybe add 'is' set here
-    theysaid = theysaid.replace(latestnoun, '!latestnoun!')
-    theysaid = theysaid.replace(latestpluralnoun, '!latestpluralnoun!')
+
     for i in [' he ', ' she ']:
         theysaid = theysaid.replace(i, ' !pronoun! ')
     for i in names:
-        theysaid = theysaid.replace(' ' + i + ' ', ' !name! ')
+        if i in theysaid:
+            theysaid = theysaid.replace(' ' + i + ' ', ' !name! ')
+            replacements.update({i: '!name!'})
+    for i in all_resp:
+        for j in i.responses:
+            if j in theysaid and j not in positives and j not in negatives:
+                theysaid = theysaid.replace(j, i.tag)
     for i in positives:
         theysaid = theysaid.replace(' ' + i + ' ', ' !pos! ')
+
     for i in negatives:
         theysaid = theysaid.replace(' ' + i + ' ', ' !neg! ')
     theysaid = theysaid.strip()
-    for i in all_resp:
-        for j in i.responses:
-            theysaid = theysaid.replace(' ' + j + ' ', ' ' + i.tag + ' ')
+
     theysaid_mod_is = None
     contractions = [
         [
@@ -593,17 +774,47 @@ def main():
                                 'i am', 'im'], [
                                     "i'm", "im"]]
     for i in contractions:
-        theysaid = theysaid.replace(i[0], i[1])
+        theysaid = theysaid.replace(i[1], i[0])
     #conjunctions_a=[' is ',' are ',' isnt ',' arent ',' were ',' werent ',' can ',' cant ', ' do ', ' dont ',' will ',' wont ']
     think('input after preprocessing: {}'.format(theysaid))
     og_conv = list(conv)
     og_conv.append(og_theysaid)
     conv.append(theysaid)
-    if resp is None:
-        resp = find_response(og_conv)
-    if resp is None:
-        resp = find_response(conv)
+    think('conv:{}'.format(conv))
+    ogconv2 = []
+    for i in range(len(og_conv)):
+        ogconv2.append(og_conv[i])
+        if i != len(og_conv) - 1:
+            ogconv2.append('/')
+    ogconv3 = []
+    for i in ogconv2:
+        ogconv3.extend(i.split(' '))
+    conv_f2 = []
+    for i in range(len(conv)):
+        conv_f2.append(og_conv[i])
+        if i != len(conv) - 1:
+            conv_f2.append('/')
+    conv_f3 = []
+    dictlist = []
+    for key, value in replacements.items(
+    ):  # Make sure this checks both theysaid and pretheysaid to find the correct dictionary value that contains both sides of it
+        for _ in range(theysaid.count(value)):
+            if theysaid.count(key) == theysaid.count(value):
+                dictlist.append([value, key])
+    for i in conv_f2:
+        conv_f3.extend(i.split(' '))
+    for conv_version in thisfunction(dictlist, '/'.join(conv)):
+        choices_temp.append(find_response(conv))
+    think('thisfunction returned {}'.format(
+        str(list(thisfunction(dictlist, '/'.join(conv))))))
     idk = False
+    think('choices temp is now {}'.format(choices_temp))
+    for i in range(2):
+        if None in choices_temp:
+            choices_temp.remove(None)
+    if choices_temp:
+        resp = random.choice(choices_temp)
+        think('selecting {} from {}'.format(resp, choices_temp))
     if resp is None:
         if theysaid.startswith('why ') and len(theysaid.split(' ')) > 2:
             resp = random.choice(
@@ -624,15 +835,19 @@ def main():
 
         conv = []
         og_conv = []
+
         think('1: ' + str(os.listdir()))
         os.chdir(path)
         think('2: ' + str(os.listdir()))
         for i in os.listdir('Memory/'):
             if len(os.listdir('Memory/' + str(i))) == 0:
                 resp = str(i)
+                think('cleared and spoke')
+                break
     if resp is None:
         resp = theysaid
     conv.append(resp)
+
     real_resp = ' ' + resp + ' '
     if latestname is not None:
         real_resp = real_resp.replace('!name!', latestname)
@@ -656,34 +871,51 @@ def main():
     real_resp = real_resp.replace('!speaker!', random.choice(mynames))
     real_resp = real_resp.replace('!currenttimeword!', current_time_word)
     real_resp = real_resp.replace('!currenttime!', random.choice(time_words))
-    if latestnoun:
-        real_resp = real_resp.replace('!latestnoun!', latestnoun)
-        real_resp = real_resp.replace('!latestpluralnoun!', latestpluralnoun)
-    elif '!latestnoun!' in real_resp or '!latestpluralnoun!' in real_resp:
-        real_resp = 'what do you mean'
     for i in all_resp:
         real_resp = real_resp.replace(i.tag, random.choice(i.responses))
     real_resp = real_resp.strip()
     og_conv.append(real_resp)
     think('og_conv: {}'.format(og_conv))
+    think('saying {}'.format(real_resp))
     say(real_resp)
-    conv_str = '/'.join(conv)
-    # Keep og conv, replace tags one by one from there
-    tags = int(conv_str.count('!') / 2)
 
-    for i in range(len(conv)):
-        if not os.path.exists('Memory/' + '/'.join(conv[i:len(conv)])):
-            os.makedirs('Memory/' + '/'.join(conv[i:len(conv)]))
-            if idk:
-                shutil.rmtree('Memory/' + resp + '/')
-    for i in range(len(conv)):
-        if not os.path.exists('Memory/' + '/'.join(og_conv[i:len(og_conv)])):
-            os.makedirs('Memory/' + '/'.join(og_conv[i:len(og_conv)]))
-            if idk:
-                shutil.rmtree('Memory/' + real_resp + '/')
-    txtblb = txtblb = textblob.TextBlob(resp)
-    mood[0] = (mood[0] * 0.96) + (txtblb.sentiment.polarity * 0.04)
-    mood[1] = (mood[1] * 0.96) + (txtblb.sentiment.subjectivity * 0.04)
+    conv2 = list(conv)
+    splitconv = [i.split(' ') for i in conv2]
+    for j in splitconv:
+        j.append('/')
+    conv2 = [item for sublist in splitconv for item in sublist]
+
+    og_conv2 = list(og_conv)
+
+    og_splitconv = [i.split(' ') for i in og_conv2]
+    for j in og_splitconv:
+        j.append('/')
+    og_conv2 = [item for sublist in og_splitconv for item in sublist]
+
+    think('ogconv2: {}\nconv2: {}'.format(og_conv2, conv2))
+    dictlist = []
+    for key, value in replacements.items(
+    ):  # Make sure this checks both theysaid and pretheysaid to find the correct dictionary value that contains both sides of it
+        for _ in range(''.join(conv2).count(value)):
+            if ''.join(conv2).count(key) == ''.join(conv2).count(value):
+                dictlist.append([value, key])
+    for i in dictlist:
+        for j in range(len(conv)):
+            if i[1] in conv[j]:
+                conv[j].replace(i[1], i[0])
+    think('thisfunc ' + str(list(thisfunction(dictlist, '/'.join(og_conv)))))
+    think('dictlist={}'.format(dictlist))
+
+    for current_conv in list(thisfunction(dictlist, '/'.join(og_conv))):
+        curr_split_conv = current_conv.split('/')
+        for i in range(len(curr_split_conv)):
+            if not os.path.exists(
+                    'Memory/' + '/'.join(curr_split_conv[i:len(curr_split_conv)])):
+                os.makedirs('Memory/' +
+                            '/'.join(curr_split_conv[i:len(curr_split_conv)]))
+    txtblb = textblob.TextBlob(resp)
+    mood[0] = (mood[0] * 0.98) + (txtblb.sentiment.polarity * 0.02)
+    mood[1] = (mood[1] * 0.98) + (txtblb.sentiment.subjectivity * 0.02)
 
 
 try:
