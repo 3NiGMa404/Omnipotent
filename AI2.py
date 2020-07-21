@@ -1,8 +1,8 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.2.3
+Version: 1.3.4
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2020-07-08
+Date: 2020-07-21
 """
 from sets import *
 import pyttsx3
