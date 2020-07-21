@@ -1,0 +1,52 @@
+Version: 1.3.4 (MINOR)
+
+Updates:
+- (+0.0.1) Added ability to understand questions like "i can't sleep, can i?"
+Planned Updates:
+- (+0.0.1) Ask why are you repeating yourself, if theysaid == convo[-2] or whatever
+- (+0.0.1) Create list of nothing statements to remove if theysaid is longer than the statement. ie.
+	>: Hey omnipotent, i like you
+	<Remove hey omnipotent>
+
+- (+0.0.2)Reverse questions to make statements and vice-versa (for nouns too)
+
+- (+0.0.2) Add sets for isn't he/she/it. ie.
+	>: John is cool, isn't he?
+	<checks if john is cool>
+	< Yes, he is
+
+- (+0.0.1)Understand multiple entities by splitting at 'and'. ie.
+	>: John and Jill are cool
+	<Save 'is cool' to Info/PERSON/John and Info/PERSON/Jill> Note: 'is' is singular of 'are'
+
+
+- (+0.0.4)Add conversation sorter external program, gathers an example conversation, 
+	  tags it and adds it to memory, also saves all data in it!
+
+
+
+
+
+- (+0.0.2) When replacing people's names, check if they are actually description and if they are relevant to the context. ie.
+	>: Hello
+	<  Hi
+	>: John is cool
+	<!male! is cool/john.txt>
+-------------------------
+	<  Hello
+	>: Hi
+	<search names, check who is usually said in the place of male, if none are found, check if male and if cool, if none are found, find most recently mentioned male, if none are found, pick random unknown male>
+	<  John is cool
+
+
+- (+0.0.4) Add generalised !noun!, !adjective! and !verb! tags, also add latestnoun and latestverb tags ie.
+	- Cats are great
+
+
+- (+0.0.2) Give AI "tools" to allow it to interact with the computer, user, and other computers (attatch to Q learner)
+
+-(+0.0.1) Store when each user was last here, then respond when asked "was james here today?"
+
+- (+0.0.1) Remember attributes of people and nouns, ie.
+	>: James' eyes are green
+	<save eyes: green under James.txt>
