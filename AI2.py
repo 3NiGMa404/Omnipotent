@@ -1,11 +1,10 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.3.4
+Version: 1.3.5
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2020-07-21
+Date: 2023-12-10
 """
 from sets import *
-import pyttsx3
 import spacy
 import pyaudio
 import traceback
@@ -28,7 +27,8 @@ import warnings
 
 warnings.filterwarnings("ignore")
 print(__doc__)
-os.system('cls')
+os.system('cls')   #On windows only
+os.system('python3 face_recognizer.py')
 inflect = inflect.engine()
 path = os.path.realpath(__file__).replace(
     os.path.basename(__file__), '').replace(
@@ -65,15 +65,10 @@ bar.update(7)
 print('\nloading spacy...', end='')
 print('done')
 os.system('cls')
-bar.update(8)
-print('\nloading and starting pyttsx3...', end='')
-engine = pyttsx3.init()
-print('done')
-os.system('cls')
 print('\nloading sets...')
 print('done')
 os.system('cls')
-bar.update(9)
+bar.update(8)
 print('\nloading database...')
 nlp = spacy.load("en_core_web_sm")
 maleraw = open('male.txt', 'r').read().split('\n')
@@ -81,7 +76,7 @@ male = []
 for i in maleraw:
     male.append(i.lower().strip())
 print('done')
-bar.update(10)
+bar.update(9)
 os.system('cls')
 print('\nloading another database...')
 femaleraw = open('female.txt', 'r').read().split('\n')
@@ -90,7 +85,7 @@ for j in femaleraw:
     female.append(j.lower().strip())
 names = male + female
 print('done')
-bar.update(11)
+bar.update(10)
 os.system('cls')
 print('\nloading memory...')
 if not os.path.exists('Memory'):
@@ -101,7 +96,7 @@ if not os.path.isfile('thoughts.txt'):
 if not os.path.exists('Info'):
     os.makedirs('Info')
 print('done')
-bar.update(12)
+bar.update(11)
 os.system('cls')
 print('\nloading speech...')
 
@@ -144,7 +139,7 @@ def add_noun(name, Class, data=''):
 
 
 print('done')
-bar.update(13)
+bar.update(12)
 os.system('cls')
 print('\ninitiating emotions...', end='')
 # mood, polarity +happy -sad, subjectivity +passionate -calm
@@ -182,6 +177,8 @@ def getinput():
 mynames = ['omnipotent']
 os.system('cls')
 talkingto = input('who are you? ')
+with open('takephoto.txt','w+') as w:
+    w.write(talkingto)
 gend = 'unknown'
 if talkingto in male:
     add_noun(talkingto, 'PERSON', 'is male')
@@ -287,7 +284,7 @@ def find_response(convo):
         for i in all_resp:
             for h in i.beginnings:
                 j = h.replace(',', '')
-                if convo[-1].startswith(j) or convo[-1].endswith(j.strip):
+                if convo[-1].startswith(j) or convo[-1].endswith(j.strip()):
                     think('{} startswith {} ({})'.format(convo[-1], j, i))
                     if count < 2:
                         count = count + 1
@@ -469,9 +466,11 @@ def main():
                     opinion = min(
                         max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1)
                     opopinion.write(str(opinion))
+            
             if opinion > 0:
                 for cur in opiniated_reversed_pos:
                     if opinion > cur:
+                        
                         howmuchilikeit = opiniated_reversed_pos[cur]
                         if howmuchilikeit == i and random.randint(1, 3) == 3:
                             resp = random.choice(
@@ -488,7 +487,7 @@ def main():
                                     [random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
                                         'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' it'])
             if opinion < 0:
-                for cur in opiniated_reversed_pos:
+                for cur in opiniated_reversed_neg:
                     if opinion < cur:
                         howmuchilikeit = opiniated_reversed_neg[cur]
                         if howmuchilikeit == i and random.randint(1, 3) == 3:
@@ -565,7 +564,7 @@ def main():
                 resp = random.choice(['!neg!, i am', '!neg!', 'i am not'])
     think('checking if {} starts with i'.format(theysaid))
     if len(theysaid) > 1 and theysaid.startswith('i ') and 'VB' in pyinflect.getAllInflections(
-            theysaid.split(' ')[1]) and not theysaid.split(' ')[1] in ['do', 'can', 'will', 'would', 'could', 'should']:
+            theysaid.split(' ')[1]) and not theysaid.split(' ')[1] in ['do', 'can', 'will', 'would', 'could', 'should','am']:
         think('ok this is interesting')
         add_noun(talkingto, 'PERSON', makethird(theysaid, gend == 'male'))
         think(makethird(theysaid, gend == 'male'))
@@ -587,7 +586,20 @@ def main():
             else:
                 resp = random.choice(
                     ['same', 'nor can i', "i can't either", "i also can't"])
-
+        if theysaid.startswith('i am '):
+            if theysaid.replace('i am ', '') in things_i_am:
+                resp = random.choice(
+                    ['same', 'as am i', 'so am i', theysaid + ' too'])            #YOU WERE HALFWAY THROUGH THIS LAST TIME
+            else:                                                                    #Checking if the ai is things that people are
+                resp = random.choice(
+                    ["yeah, i am not", "really, i am not", "are you, i am not", 'cool'])
+        if theysaid.startswith('i am not'):
+            if theysaid.replace('i am not', '') in things_i_am:
+                resp = random.choice(
+                    ['same', 'nor am i', 'i am also not', theysaid + ' either'])            #YOU WERE HALFWAY THROUGH THIS LAST TIME
+            else:                                                                    #Checking if the ai is things that people are
+                resp = random.choice(
+                    ["yeah, i am", "really, i am", "are you, i am", 'cool'])
     if theysaid.startswith('tell me about '):
         try:
             if theysaid.replace('tell me about ', '') == '!speaker!':
@@ -813,7 +825,7 @@ def main():
         if None in choices_temp:
             choices_temp.remove(None)
     if choices_temp:
-        resp = random.choice(choices_temp)
+        resp = random.choice(choices_temp) ###
         think('selecting {} from {}'.format(resp, choices_temp))
     if resp == None:
         if theysaid.startswith('why ') and len(theysaid.split(' ')) > 2:
@@ -827,7 +839,23 @@ def main():
                                   'how should i know'])
 
     if resp == None:
-
+        people=[]
+        with open('inframe.txt','r') as r:
+            inframe_string=r.read()                             #Getting the video data and figuring out who is in the frame
+            if len(inframe_string)>0:
+                people=inframe_string.split('\n').remove('').remove(talkingto)
+        if people:
+            if people[0]!='Unknown':
+                conv = []
+                og_conv = []
+                resp=random.choice(['hello {}','greetings {}','hi {}','how are you {}','hey {}','yo {}'])
+                resp.format(people[0])
+            else:
+                conv = []
+                og_conv = []
+                resp=random.choice(['who is with you','who is that','who is this','who can i see'])
+            
+    if resp==None:
         idk = True
         for i in range(len(conv)):
             if not os.path.exists('Memory/' + '/'.join(conv[i:len(conv)])):
@@ -929,7 +957,7 @@ except Exception as e:
         think(traceback.format_exc())
 
 '''
-   © Copyright 2020 James Pinder
+   © Copyright 2023 James Pinder
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
