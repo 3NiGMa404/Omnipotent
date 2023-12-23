@@ -21,9 +21,11 @@ from itertools import product
 from nltk.corpus import wordnet as wn
 import commands
 import os
+import inspect
 import psutil
 import euc_dist
 import warnings
+from memory_file import memory_dict
 
 warnings.filterwarnings("ignore")
 print(__doc__)
@@ -88,8 +90,7 @@ print('done')
 bar.update(10)
 os.system('cls')
 print('\nloading memory...')
-if not os.path.exists('Memory'):
-    os.makedirs('Memory')
+
 if not os.path.isfile('thoughts.txt'):
     x = open('thoughts.txt', 'w+')
     x.close()
@@ -180,20 +181,21 @@ talkingto = input('who are you? ')
 with open('takephoto.txt','w+') as w:
     w.write(talkingto)
 gend = 'unknown'
-if talkingto in male:
-    add_noun(talkingto, 'PERSON', 'is male')
-    add_noun(talkingto, 'PERSON', '/male')
-    gend = 'male'
-elif talkingto in female:
-    add_noun(talkingto, 'PERSON', 'is female')
-    add_noun(talkingto, 'PERSON', '/female')
-    gend = 'female'
-else:
-    add_noun(talkingto, 'PERSON')
+if not os.path.exists(talkingto+'.txt'):
+    if talkingto in male:
+        add_noun(talkingto, 'PERSON', 'is male')
+        add_noun(talkingto, 'PERSON', '/male')
+        gend = 'male'
+    elif talkingto in female:
+        add_noun(talkingto, 'PERSON', 'is female')
+        add_noun(talkingto, 'PERSON', '/female')
+        gend = 'female'
+    else:
+        add_noun(talkingto, 'PERSON')
 think("{}'s gender is {}".format(talkingto, gend))
 conv = []
 
-neutral = ['maybe', 'maybe, maybe not']
+neutral = ['maybe', 'maybe, maybe not','perhaps']
 
 
 def thisfunction(lst, s):
@@ -245,9 +247,20 @@ def find_response(convo):
             think('Chose "' + saying + '" from ' + str(arent_u_n.responses))
             return saying
     for i in range(len(convo)):
-        if os.path.exists('Memory/' + str('/'.join(conv[i:len(convo)]))):
-            think('Memory/' + str('/'.join(conv[i:len(convo)])) + ' exists')
-            answers = os.listdir('Memory/' + '/'.join(convo[i:len(convo)]))
+        
+        convo_memory=memory_dict                     #The nested dictionary location of the currrent convo (will be built from the for loop)
+        found=True
+        for phrase in convo[i:]:
+            try:
+                convo_memory=dict_address[phrase]
+                
+            except:
+                found=False
+                break
+        
+        if found:
+            think('memory_dict[' + ']['.join(conv[i:len(convo)]) + '] exists')
+            answers=convo_memory.keys()
             if len(answers) > 0:
                 think(
                     'There are {} possible answers: {}'.format(
@@ -275,7 +288,40 @@ def find_response(convo):
                     saying = saying.replace(i.tag, random.choice(i.responses))
                 think('chose ' + saying + ' from ' + str(answers))
                 return saying
-
+                '''
+        if os.path.exists('Memory/' + str('/'.join(conv[i:len(convo)]))):
+            think('Memory/' + str('/'.join(conv[i:len(convo)])) + ' exists')
+            answers = os.listdir('Memory/' + '/'.join(convo[i:len(convo)]))
+            if len(answers) > 0:
+                think(
+                    'There are {} possible answers: {}'.format(
+                        len(answers), answers))
+                if len(answers) > 1 and convo[-1] in answers:
+                    answers.remove(convo[-1])
+                diff = []
+                for i in answers:
+                    text_i = textblob.TextBlob(i)
+                    S_pol = [
+                        text_i.sentiment.polarity,
+                        text_i.sentiment.subjectivity]
+                    diff.append(round(2 - euc_dist.calc(S_pol, mood), 2))
+                answers_2 = []
+                for i in range(len(diff)):
+                    if '!' not in answers[i]:
+                        for _ in range(2 * int((diff[i] * 100))):
+                            answers_2.append(
+                                answers[i])
+                    else:
+                        for _ in range(int((diff[i] * 100))) :
+                            answers_2.append(answers[i])
+                saying = random.choice(answers_2).lower()
+                mood[0] = (mood[0] * 0.98) + (S_pol[0] * 0.02)
+                mood[1] = (mood[1] * 0.98) + (S_pol[1] * 0.02)
+                for i in all_resp:
+                    saying = saying.replace(i.tag, random.choice(i.responses))
+                think('chose ' + saying + ' from ' + str(answers))
+                return saying
+        '''
         # Check for all of the sets' patterns
         think('checking for recognized patterns...')
         count = 0
@@ -283,8 +329,8 @@ def find_response(convo):
 
         for i in all_resp:
             for h in i.beginnings:
-                j = h.replace(',', '')
-                if convo[-1].startswith(j) or convo[-1].endswith(j.strip()):
+                j = h.replace(',', '').strip()
+                if convo[-1].startswith(j) or (convo[-1].endswith(j) and j!='are you'):
                     think('{} startswith {} ({})'.format(convo[-1], j, i))
                     if count < 2:
                         count = count + 1
@@ -369,10 +415,8 @@ def main():
         current_time_word = 'morning'
     if 11 < hour < 19:
         current_time_word = 'afternoon'
-    if 18 < hour < 21:
+    if 18 < hour or hour < 2:
         current_time_word = 'evening'
-    if hour > 20:
-        current_time_word = 'night'
     time_words.remove(current_time_word)
 
     resp = None
@@ -417,6 +461,7 @@ def main():
             ['my name is !speaker!', 'i am called !speaker!', 'call me !speaker!'])
     think('theysaid is {}'.format(theysaid))
     opinionated = {
+        'dont love':0,
         'dont like': -0.3,
         'dislike': -0.4,
         'really dont like': -0.5,
@@ -427,7 +472,7 @@ def main():
         'like': 0.3,
         'really like': 0.5,
         'dont dislike': 0,
-        'dont mind': 0.1,
+        'dont mind': 0,
         'really dont mind': 0.2,
         'love': 0.8,
         'really love': 0.9,
@@ -439,11 +484,11 @@ def main():
         0.5: 'really like',
         0.3: 'like',
         0.2: 'really dont mind',
-        0.1: 'dont mind'}
+        0: 'dont mind'}
     opiniated_reversed_neg = {-0.95: 'despise', -0.85: 'really hate', -0.75: 'hate', -0.5: 'really dislike', -
-    0.5: 'really dont like', -0.4: 'dislike', -0.3: 'dont like', -0.1: 'am not fond of'}
+    0.5: 'really dont like', -0.4: 'dislike', -0.3: 'dont like', 0: 'dont love'}
     for i in list(opinionated.keys()):
-        if theysaid.startswith('i ' + i) and not resp:
+        if theysaid.startswith('i ' + i) or theysaid.startswith('do you ' + i) and not resp:
             try:
                 rd = open(
                     'Info/Opinions/' +
@@ -457,53 +502,75 @@ def main():
                 opinion = float(rd.read())
                 rd.close()
                 newopinion = opinion + (random.gauss(0.05, 0.01) * min(
-                    max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1))
-                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '') + '.txt', 'w+') as opopinion:
-                    opopinion.write(str(newopinion))
-                opinion = newopinion
+                    max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1))         #weird way to update opinions for some reason
+                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '').replace('do you ' + i+' ','') + '.txt', 'w+') as opopinion:    #Add opinion of things to both opinion file and me.txt
+                    opopinion.write(str(newopinion))             #opopinion=open opinion lol
+                
             except BaseException:
-                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '') + '.txt', 'w+') as opopinion:
+                with open('Info/Opinions/' + theysaid.replace('i ' + i + ' ', '').replace('do you ' + i+' ','') + '.txt', 'w+') as opopinion:
                     opinion = min(
-                        max([2 * mood[0] * opinionated[i] + random.gauss(0, 0.2), -1]), 1)
+                        max([mood[0] + opinionated[i] + random.gauss(0, 0.2), -1]), 1)
                     opopinion.write(str(opinion))
-            
-            if opinion > 0:
+                    
+                if opinion >= 0:
+                    for cur in opiniated_reversed_pos:
+                        if opinion > cur:
+                            with open('Me.txt', 'a') as opme:
+                               opme.write(makethird(cur)+' '+theysaid.replace('i ' + i + ' ', '').replace('do you ' + i+' ',''))
+
+                            break
+                else:
+                    for cur in opiniated_reversed_neg:
+                        if opinion < cur:
+                            with open('Me.txt', 'a') as opme:
+                               opme.write(makethird(cur)+' '+theysaid.replace('i ' + i + ' ', '').replace('do you ' + i+' ',''))
+
+                            break
+                opinion = newopinion
+                
+            if opinion >= 0:
                 for cur in opiniated_reversed_pos:
                     if opinion > cur:
                         
                         howmuchilikeit = opiniated_reversed_pos[cur]
-                        if howmuchilikeit == i and random.randint(1, 3) == 3:
+                        if howmuchilikeit == i and random.randint(1, 3) == 3 and theysaid.startswith('i ' + i):
                             resp = random.choice(
                                 ['as do i', 'same', 'same here', 'agreed'])
+                        elif howmuchilikeit == i and random.randint(1, 3) == 3 and theysaid.startswith('do you ' + i):
+                            resp=random.choice(do_you_p.responses)
                         if not resp:
                             if inflect.singular_noun(
                                     theysaid.replace('i ' + i + ' ', '')):
                                 resp = random.choice(
-                                    [random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    ['i ' + howmuchilikeit + ' ' + theysaid.replace(
                                         'i ' + i + ' ', ''),
-                                     random.choice(['i ', 'well i ']) + howmuchilikeit + ' them'])
+                                     'i ' + howmuchilikeit + ' them'])
                             else:
                                 resp = random.choice(
-                                    [random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
-                                        'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' it'])
-            if opinion < 0:
+                                    ['i ', 'well i ' + howmuchilikeit + ' ' + theysaid.replace(
+                                        'i ' + i + ' ', ''), 'i ' + howmuchilikeit + ' it'])
+                        break
+            else:
                 for cur in opiniated_reversed_neg:
                     if opinion < cur:
                         howmuchilikeit = opiniated_reversed_neg[cur]
-                        if howmuchilikeit == i and random.randint(1, 3) == 3:
+                        if howmuchilikeit == i and random.randint(1, 3) == 3 and theysaid.startswith('i ' + i):
                             resp = random.choice(
                                 ['same', 'same here', 'agreed'])
+                        elif howmuchilikeit == i and random.randint(1, 2) == 2 and theysaid.startswith('do you ' + i):
+                            resp=random.choice(do_you_p.responses)
                         if not resp:
                             if inflect.singular_noun(
                                     theysaid.replace('i ' + i + ' ', '')):
                                 resp = random.choice(
-                                    [random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
+                                    ['i ' + howmuchilikeit + ' ' + theysaid.replace(
                                         'i ' + i + ' ', ''),
-                                     random.choice(['i ', 'well i ']) + howmuchilikeit + ' them'])
+                                     'i ' + howmuchilikeit + ' them'])
                             else:
                                 resp = random.choice(
-                                    [random.choice(['i ', 'well i ']) + howmuchilikeit + ' ' + theysaid.replace(
-                                        'i ' + i + ' ', ''), random.choice(['i ', 'well i ']) + howmuchilikeit + ' it'])
+                                    ['i' + howmuchilikeit + ' ' + theysaid.replace(
+                                        'i ' + i + ' ', ''), 'i' + howmuchilikeit + ' it'])
+                        break
             if not resp:
                 if inflect.singular_noun(theysaid.replace('i ' + i + ' ', '')):
                     resp = random.choice(['i ',
@@ -555,10 +622,10 @@ def main():
                         'you are ',
                         '').replace(
                         'are you ',
-                        '')).sentiment.polarity > 0:
+                        '')).sentiment.polarity > -0.1:
                 resp = random.choice(['!pos!, i am', '!pos!', 'i am'])
                 add_to_me = open('Me.txt', 'a')
-                add_to_me.write(theysaid.replace('you are ', ''))
+                add_to_me.write(theysaid.replace('you are ', 'am'))
                 add_to_me.close()
             else:
                 resp = random.choice(['!neg!, i am', '!neg!', 'i am not'])
@@ -582,24 +649,24 @@ def main():
                 "i can't ",
                 '') in things_i_can_do:
                 resp = random.choice(
-                    ['i can', 'why not', 'why not, i can', 'really, i can'])
+                    ['i can', 'why not', 'why not i can', 'really, i can'])
             else:
                 resp = random.choice(
-                    ['same', 'nor can i', "i can't either", "i also can't"])
+                    ['same', 'nor can i', "i cant either", "i also cant"])
         if theysaid.startswith('i am '):
             if theysaid.replace('i am ', '') in things_i_am:
                 resp = random.choice(
                     ['same', 'as am i', 'so am i', theysaid + ' too'])            #YOU WERE HALFWAY THROUGH THIS LAST TIME
             else:                                                                    #Checking if the ai is things that people are
                 resp = random.choice(
-                    ["yeah, i am not", "really, i am not", "are you, i am not", 'cool'])
+                    ["yeah i am not", "really i am not", "are you i am not", 'cool'])
         if theysaid.startswith('i am not'):
             if theysaid.replace('i am not', '') in things_i_am:
                 resp = random.choice(
                     ['same', 'nor am i', 'i am also not', theysaid + ' either'])            #YOU WERE HALFWAY THROUGH THIS LAST TIME
             else:                                                                    #Checking if the ai is things that people are
                 resp = random.choice(
-                    ["yeah, i am", "really, i am", "are you, i am", 'cool'])
+                    ["yeah i am", "really i am", "are you i am", 'cool'])
     if theysaid.startswith('tell me about '):
         try:
             if theysaid.replace('tell me about ', '') == '!speaker!':
@@ -813,11 +880,13 @@ def main():
         # correct dictionary value that contains both sides of it
         for _ in range(theysaid.count(value)):
             if theysaid.count(key) == theysaid.count(value):
-                dictlist.append([value, key])
+                dictlist.append([value, key])              #Dictlist is a list of all replacements to be made
     for i in conv_f2:
         conv_f3.extend(i.split(' '))
+    
     for conv_version in thisfunction(dictlist, '/'.join(conv)):
         choices_temp.append(find_response(conv))
+    think('dictlist is {}'.format(dictlist))
     think('thisfunction returned {}'.format(str(list(thisfunction(dictlist, '/'.join(conv))))))
     idk = False
     think('choices temp is now {}'.format(choices_temp))
@@ -858,22 +927,44 @@ def main():
     if resp==None:
         idk = True
         for i in range(len(conv)):
-            if not os.path.exists('Memory/' + '/'.join(conv[i:len(conv)])):
-                os.makedirs('Memory/' + '/'.join(conv[i:len(conv)]))
+        
+        
+            conv_memory=memory_dict                     #The nested dictionary location of the currrent convo (will be built from the for loop)
+            found=True
+            shortened_conv=conv[i:len(conv)]
+            phrases=[]                                  #the conversation going forward
+            for phrase in shortened_conv[i:]:
+                phrases.append(phrase)
+                if not phrase in conv_memory.keys():         #Adding all versions of conv to dict
+                     memory_dict[phrase]={}       #How tf do we update the memory dictionary
+                     exec_string='memory_dict'
+                     for memory_phrase in phrases:
+                         exec_string=exec_string+'["'+memory_phrase+'"]'     #THIS IS SO CURSED, BUT ITS THE ONLY WAY I CAN THINK TO
+                     exec_string=exec_string+'={}'                         #Navigate an unknown-dimensional nested dictionary
+                     think('exec_string is {}     MAY GOD HAVE MERCY ON OUR SOULS FOR WRITING LINE {}'.format(exec_string,inspect.getframeinfo(inspect.currentframe()).lineno))
+                     exec(exec_string)
+                     conv_memory[phrase]={}
+                     
 
+                '''
+            if not os.path.exists('Memory/' + '/'.join(conv[i:len(conv)])):        #migrating to dict
+                os.makedirs('Memory/' + '/'.join(conv[i:len(conv)]))
+'''
         conv = []
         og_conv = []
 
         think('1: ' + str(os.listdir()))
         os.chdir(path)
         think('2: ' + str(os.listdir()))
-        for i in os.listdir('Memory/'):
-            if len(os.listdir('Memory/' + str(i))) == 0:
-                resp = str(i)
+       
+        for phrase in memory_dict:
+            if memory_dict[phrase] == {}:
+                resp = phrase
                 think('cleared and spoke')
                 break
+ 
     if resp == None:
-        resp = theysaid
+        resp = theysaid    #lol i don't think this is possible
     conv.append(resp)
 
     real_resp = ' ' + resp + ' '
@@ -936,10 +1027,33 @@ def main():
     for current_conv in list(thisfunction(dictlist, '/'.join(og_conv))):
         curr_split_conv = current_conv.split('/')
         for i in range(len(curr_split_conv)):
+            '''
             if not os.path.exists(
-                    'Memory/' + '/'.join(curr_split_conv[i:len(curr_split_conv)])):
+                    'Memory/' + '/'.join(curr_split_conv[i:len(curr_split_conv)])):           #wtf is this doing
                 os.makedirs('Memory/' +
                             '/'.join(curr_split_conv[i:len(curr_split_conv)]))
+         '''       
+
+            conv_memory=memory_dict                     #The nested dictionary location of the currrent convo (will be built from the for loop)
+            found=True
+            shortened_conv=conv[i:len(curr_split_conv)]
+            phrases=[]                                  #the conversation going forward
+            for phrase in shortened_conv[i:]:
+                phrases.append(phrase)
+                if not phrase in conv_memory.keys():         #Adding all versions of conv to dict
+                     memory_dict[phrase]={}                  #How tf do we update the memory dictionary
+                     exec_string='memory_dict'
+                     for memory_phrase in phrases:
+                         exec_string=exec_string+'["'+memory_phrase+'"]'     #THIS IS SO CURSED, BUT ITS THE ONLY WAY I CAN THINK TO
+                     exec_string=exec_string+'={}'                         #Navigate an unknown-dimensional nested dictionary
+                     think('exec_string is {}     MAY GOD HAVE MERCY ON OUR SOULS FOR WRITING LINE {}'.format(exec_string,inspect.getframeinfo(inspect.currentframe()).lineno))
+                     exec(exec_string)
+                     conv_memory[phrase]={}
+
+
+    with open('memory_file.py','w+') as op:
+        op.write('memory_dict='+str(memory_dict))
+                     
     txtblb = textblob.TextBlob(resp)
     mood[0] = (mood[0] * 0.98) + (txtblb.sentiment.polarity * 0.02)
     mood[1] = (mood[1] * 0.98) + (txtblb.sentiment.subjectivity * 0.02)
