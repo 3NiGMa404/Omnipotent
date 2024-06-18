@@ -1,8 +1,8 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.3.5
+Version: 1.4.3
 Name: James Pinder (https://github.com/3NiGMa404)
-Date: 2023-12-10
+Date: 2024-01-10
 """
 from sets import *
 import spacy
