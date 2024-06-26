@@ -1,6 +1,6 @@
 """
 Script: Omnipotent Lillypad AI2
-Version: 1.4.4
+Version: 1.5.5
 Name: James Pinder (https://github.com/3NiGMa404)
 Date: 2024-01-10
 """
@@ -508,6 +508,8 @@ clause object:
             for i in range(len(clause_doc)):
                 if clause_doc[i].pos_=='VERB':
                     verb_ls.append(clause_doc[i].text)
+                    if len(clause_doc)<i+2:
+                        break
                     if clause_doc[i+1] !='VERB':
                         break
             verb=' '.join(verb_ls)
@@ -1458,7 +1460,6 @@ def main():
                     resp=cur_model.Get_Response(current_conv_gpt)
                     
                     if resp:
-                        print(resp.encode(encoding = 'UTF-8', errors = 'strict'))
                         think(inspect.getframeinfo(inspect.currentframe()).lineno,'got "{}" from {}'.format(resp.encode(encoding = 'UTF-8', errors = 'strict'),cur_model.Name))
     for command in commands.commands:
         if "<"+command.name+">" in resp:
